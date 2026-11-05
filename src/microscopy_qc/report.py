@@ -68,7 +68,7 @@ def write_report(output, run, images):
             )
         flattened.append(fields)
     with (output / "per_image.csv").open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=list(flattened[0]))
+        writer = csv.DictWriter(f, fieldnames=list(flattened[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(flattened)
     cards = []
