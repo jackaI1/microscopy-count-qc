@@ -1,10 +1,18 @@
-I built a microscopy counting tool because a total count alone did not tell me which nuclei a method had missed or joined together. I wanted to compare two counting methods and inspect their mistakes on the original images.
+I merged this into my existing [lab-assay-lims project](https://github.com/jackaI1/lab-assay-lims/tree/main/projects/microscopy-count-qc). The current code is in `projects/microscopy-count-qc/` there. I kept the code here so older links still work.
 
-The tool marks individual nuclei, compares them with public human annotations, and flags images or objects that need a closer look. It counts nuclei as a proxy for cells; it does not measure whole cells.
+The move keeps the original layout, including `tests/test_segmentation_qc.py`, `tests/test_metrics_data.py`, `tests/test_report.py`, `tests/test_audit.py`. I replaced the README with the report below and left out Git history, installed dependencies, caches and generated build output from the hub copy.
 
-**Try it without installing anything:** [browse the saved image-by-image report](reports/bbbc039/gallery.md). Each image has a reference panel, both methods' error overlays, counts, and review flags. For a filterable offline version, [download index.html](https://github.com/jackaI1/microscopy-count-qc/raw/refs/heads/main/reports/bbbc039/index.html) and open the saved file in a browser. All its images are embedded.
+The 5 test source files moved with the code. No project-specific GitHub Actions workflow was retained; the report records the omitted checks, and the test sources can be run locally from the linked folder.
 
-Green outlines mark matched predictions, pink marks extra or poorly overlapping predictions, and orange marks missed reference nuclei. Blue boxes mark possible merged objects for human review. These warnings are suggestions to inspect an image, not confirmed biological problems.
+Other specific omissions: reports/bbbc039/index.html (over 10 MB); reports/ (generated output).
+
+Omitted workflows: `microscopy-count-qc-ci.yml`: The relocated workflow failed in GitHub Actions and was removed to keep the hub checks independent. Local test sources remain available.
+
+---
+
+# microscopy-count-qc
+
+I built a microscopy counting tool to learn how the underlying idea works. This is a learning project.
 
 ## What I found
 
@@ -18,8 +26,6 @@ I ran both methods on all 50 images in the publisher's test split, containing 5,
 F1 balances missed and extra objects, with a perfect score of one. Overlap means intersection over union, or IoU: the shared area divided by the combined area. A higher overlap cutoff demands a closer outline. These are micro F1 scores, calculated by pooling matched, missed, and extra objects across images.
 
 Cellpose produced closer outlines overall, but watershed had the smaller average count error. That matters because a plausible total can hide missed objects and extra detections that cancel each other out. I keep both measures and the individual images visible rather than choosing a winner from one number.
-
-Both methods triggered focus review on 6 test images. Possible merges were flagged in 24 watershed images and 29 Cellpose images. Those are heuristic flags, not measured focus or merge accuracy: the dataset has no corresponding review labels. The [per-image CSV](reports/bbbc039/per_image.csv) includes signed and absolute count errors, F1 at each cutoff, focus scores, and flagged object IDs.
 
 ## Run it myself
 
@@ -48,8 +54,6 @@ uv run --frozen microscopy-qc render
 
 ## How I kept the comparison fair
 
-I use the publisher's whole-image partitions: 100 training images, 50 validation images, and 50 test images. No random patches cross between partitions. I use only training annotations to estimate nucleus diameter, a minimum object area, and review cutoffs. Validation images are left unused. Neither method is fitted to test annotations, and the pretrained model is not fine-tuned.
-
 The baseline smooths the image, chooses a foreground threshold, and uses watershed, which separates touching objects around peaks in their distance from the background. Cellpose uses its frozen pretrained nuclei model. Both receive the same training-derived diameter and minimum object area. The exact parameters, dependency versions, input hashes, model-weight hash, and complete split membership are saved with the results.
 
 For each overlap cutoff, I match predicted and annotated nuclei one to one, maximizing the number of valid matches before breaking ties by overlap. An unmatched prediction is an extra detection; an unmatched annotation is a miss. The report also saves macro F1, which averages each image's F1, so sparse and crowded images can be compared.
@@ -72,15 +76,18 @@ I used the original sources below, with no substitute dataset and no private dat
 - [Publisher's annotation decoder](https://gist.github.com/jccaicedo/15e811722fca51e3ae90e8b43057f075). I follow its first-channel connected-region convention rather than treating the RGB annotation as ordinary instance IDs.
 - [Cellpose](https://github.com/MouseLand/cellpose), using version 3.1.1.1 and its pretrained nuclei weights. The [model documentation](https://cellpose.readthedocs.io/en/v3.1.1.1/models.html) explains the model and public weight downloads; the [Cellpose paper](https://doi.org/10.1038/s41592-020-01018-x) describes the method. Cellpose code is BSD-3-Clause; see its upstream license and model terms.
 
-## Code and checks
+## Tests and limits
 
-[Data loading](src/microscopy_qc/data.py), [segmentation](src/microscopy_qc/segment.py), [matching and metrics](src/microscopy_qc/metrics.py), [review rules](src/microscopy_qc/qc.py), and [report generation](src/microscopy_qc/report.py) are separate modules. [Design notes](docs/design.md) explain the evaluation choices.
+There are 5 test source files in this copy. That source count does not establish an execution result. This is a source snapshot, and running it on a new machine may need environment-specific setup.
 
-```sh
-uv run --frozen --extra dev pytest -q
-uv run --frozen --extra dev ruff check src tests
-uv run --frozen --extra dev ruff format --check src tests
-uv run --frozen microscopy-qc audit
-```
 
-The test suite has 25 tests covering matching, blank images, touching nuclei, blur sensitivity, merge warnings, unsafe archives, changed extracted data, report output, and the command-line workflow. [CI](.github/workflows/ci.yml) also audits all 100 saved image/method rows and downloads the public data to run both real methods on one held-out image.
+Files omitted from this snapshot:
+
+- reports/bbbc039/index.html (over 10 MB)
+
+
+Generated output omitted from this copy: reports/ (generated output). Regenerate it with the project scripts.
+
+The relocated workflow failed in GitHub Actions and was removed to keep the hub checks independent. Local test sources remain available.
+
+No project-specific GitHub Actions workflow was retained. The local test sources remain in this folder.
